@@ -1,0 +1,160 @@
+#!/usr/bin/env ruby
+
+require_relative '../lib/blogger'
+
+require 'em-websocket'
+require 'fileutils'
+require 'listen'
+require 'thor'
+require 'json'
+require 'logger'
+require 'rack'
+require 'rack-livereload'
+
+class BloggerCLI < Thor
+  desc 'init NAME', 'initialize blog directory structure'
+  def init(name)
+    template = File.expand_path(File.join(__FILE__, '../../lib/templates/default'))
+    Dir.mkdir name
+    FileUtils.cp_r(Dir[File.join(template, '*')], name)
+  end
+
+  option :scheme
+  option :host
+  option :port, :type => :numeric
+  desc 'build CWD', 'build blog for deployments'
+  def build(cwd)
+    # TODO: Respect cwd.
+
+    @log = Logger.new(STDOUT)
+    @sockets = []
+
+    @log.info "Building #{cwd}"
+    layouts_dir  = '_layouts/'
+    contents_dir = '_contents/'
+    assets_dir   = '_assets/'
+    public_dir   = '_public/'
+
+    engine = Blogger::Engine.new contents_dir: contents_dir,
+                                 assets_dir: assets_dir,
+                                 layouts_dir: layouts_dir,
+                                 public_dir: public_dir,
+                                 scheme: options[:scheme],
+                                 host: options[:host],
+                                 port: options[:port]
+
+    # Build once.
+    engine.build
+  end
+
+  desc 'serve CWD', 'serve blog and watch for changes for re-rendering'
+  def serve(cwd)
+    # TODO: Respect cwd.
+
+    @log = Logger.new(STDOUT)
+    @sockets = []
+
+    @log.info "Building #{cwd}"
+    layouts_dir  = '_layouts/'
+    contents_dir = '_contents/'
+    assets_dir   = '_assets/'
+    public_dir   = '_public/'
+
+    engine = Blogger::Engine.new contents_dir: contents_dir,
+                                 assets_dir: assets_dir,
+                                 layouts_dir: layouts_dir,
+                                 public_dir: public_dir
+
+    # Build once.
+    engine.build
+
+    # Watch for changes for re-rendering and live-reloading.
+    @log.info 'Watching for changes...'
+    listener = Listen.to(contents_dir, layouts_dir) do |modified, added, removed|
+      @log.info "modified: #{modified}" if modified.any?
+      @log.info "added: #{added}"       if added.any?
+      @log.info "removed: #{removed}"   if removed.any?
+
+      @log.info "Rendering #{contents_dir}"
+      @log.info
+      changed_pages = engine.build
+
+      # LiveReload pages updates.
+      @sockets.each do |ws|
+        @log.info 'Sending pages updates...'
+        changed_pages.each do |p|
+          @log.info p[:link]
+          ws.send(
+            JSON.dump(
+              command: 'reload',
+              path: p[:link],
+              liveCSS: true
+            )
+          )
+        end
+      end
+      @log.info "Updates sent: #{@sockets.count} sockets"
+    end
+    listener.start
+
+    # LiveReload server.
+    live_reload_thread = Thread.new do
+      @log.info 'Running LiveReload WebSocket Server at :35729'
+      EM.run do
+        EM::WebSocket.run(host: 'localhost', port: 35_729) do |ws|
+          ws.onopen do |_handshake|
+            @log.info 'WebSocket connection open'
+            ws.send(
+              JSON.dump(
+                command: 'hello',
+                protocols: ['http://livereload.com/protocols/official-7'],
+                serverName: 'sarans21::blogger'
+              )
+            )
+            @sockets << ws
+          end
+
+          ws.onclose do
+            @sockets.delete(ws)
+            @log.info 'WebSocket Connection closed'
+          end
+
+          ws.onmessage do |msg|
+            @log.info "Recieved WebSocket client message: #{msg}"
+          end
+        end
+      end
+    end
+    live_reload_thread.abort_on_exception = true
+
+    # Serve.
+    Rack::Handler::Thin.run(Rack::LiveReload.new(Rack::Static.new(
+                                                   Server.new,
+                                                   urls: [''], root: '_public',
+                                                   index: 'index.html'
+                                                 )))
+
+    # Trap stop signals.
+    Signal.trap('INT')  { _stop }
+    Signal.trap('TERM') { _stop }
+
+    sleep
+  end
+
+  private
+
+  def _stop
+    @log.info 'Blogger stopping...'
+    EM.stop
+    @log.info 'Goodbye!'
+    exit(0)
+  end
+end
+
+class Server
+  def call(_env)
+    [200, { 'Content-Type' => 'text/plain' }, ['Hello, world!']]
+  end
+end
+
+BloggerCLI.start(ARGV)
