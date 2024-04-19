@@ -19,5 +19,6 @@ gem 'rouge'
 
 gem 'em-websocket'
 gem 'rack'
+gem 'rackup'
 gem 'rack-livereload'
-gem 'thin'
+gem 'puma'

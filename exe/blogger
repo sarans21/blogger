@@ -9,7 +9,9 @@ require 'thor'
 require 'json'
 require 'logger'
 require 'rack'
+require 'rackup'
 require 'rack-livereload'
+require 'puma'
 
 class BloggerCLI < Thor
   desc 'init NAME', 'initialize blog directory structure'
@@ -47,6 +49,7 @@ class BloggerCLI < Thor
     engine.build
   end
 
+  option :host
   desc 'serve CWD', 'serve blog and watch for changes for re-rendering'
   def serve(cwd)
     # TODO: Respect cwd.
@@ -63,7 +66,8 @@ class BloggerCLI < Thor
     engine = Blogger::Engine.new contents_dir: contents_dir,
                                  assets_dir: assets_dir,
                                  layouts_dir: layouts_dir,
-                                 public_dir: public_dir
+                                 public_dir: public_dir,
+                                 host: options[:host]
 
     # Build once.
     engine.build
@@ -128,11 +132,11 @@ class BloggerCLI < Thor
     live_reload_thread.abort_on_exception = true
 
     # Serve.
-    Rack::Handler::Thin.run(Rack::LiveReload.new(Rack::Static.new(
+    Rack::Handler::pick('puma').run(Rack::LiveReload.new(Rack::Static.new(
                                                    Server.new,
                                                    urls: [''], root: '_public',
                                                    index: 'index.html'
-                                                 )))
+                                                 )), Host: options[:host], Port: 8080)
 
     # Trap stop signals.
     Signal.trap('INT')  { _stop }
