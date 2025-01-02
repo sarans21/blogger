@@ -23,7 +23,7 @@ class BloggerCLI < Thor
 
   option :scheme
   option :host
-  option :port, :type => :numeric
+  option :port, type: :numeric
   desc 'build CWD', 'build blog for deployments'
   def build(cwd)
     # TODO: Respect cwd.
@@ -72,16 +72,27 @@ class BloggerCLI < Thor
     # Build once.
     engine.build
 
+    @last_built_at = Time.at(0)
+
     # Watch for changes for re-rendering and live-reloading.
     @log.info 'Watching for changes...'
     listener = Listen.to(contents_dir, layouts_dir) do |modified, added, removed|
+      # Sometimes, events above fires 2 times within 5s. This naively prevents rebuild.
+      
+      if Time.now - @last_built_at < 5
+        @log.info "rebuild not triggered because the change events fired within 5s since last build"
+        next
+      end
+
       @log.info "modified: #{modified}" if modified.any?
       @log.info "added: #{added}"       if added.any?
       @log.info "removed: #{removed}"   if removed.any?
 
       @log.info "Rendering #{contents_dir}"
       @log.info
+
       changed_pages = engine.build
+      @last_built_at = Time.now
 
       # LiveReload pages updates.
       @sockets.each do |ws|
@@ -132,11 +143,11 @@ class BloggerCLI < Thor
     live_reload_thread.abort_on_exception = true
 
     # Serve.
-    Rack::Handler::pick('puma').run(Rack::LiveReload.new(Rack::Static.new(
-                                                   Server.new,
-                                                   urls: [''], root: '_public',
-                                                   index: 'index.html'
-                                                 )), Host: options[:host], Port: 8080)
+    Rackup::Handler.pick('puma').run(Rack::LiveReload.new(Rack::Static.new(
+                                                            Server.new,
+                                                            urls: [''], root: '_public',
+                                                            index: 'index.html'
+                                                          )), Host: options[:host], Port: 8080)
 
     # Trap stop signals.
     Signal.trap('INT')  { _stop }
