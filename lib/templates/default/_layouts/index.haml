@@ -18,6 +18,7 @@
               - articles.each do |a|
                 %li
                   %a.item{:href => a[:link]}= a[:title]
+                  %span.item-date =a[:date]
         %ul.main-pages-nav
           %li
             %a{:href => link.call("")}

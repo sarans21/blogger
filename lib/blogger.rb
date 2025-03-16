@@ -91,10 +91,11 @@ module Blogger
           dst_file = File.join(dst, File.basename(f, '.md')) + '.html'
 
           content = File.read(f)
-          front_matter, body = _extract_front_matter(content)
-          title              = front_matter['title']
+          front_matter, = _extract_front_matter(content)
+          title = front_matter['title']
+          date  = Date.strptime(front_matter['date'], '%Y-%m-%d').strftime('%Y/%m/%d')
 
-          nav[src.delete_prefix(@contents_dir)] << { title: title, link: link(dst_file) }
+          nav[src.delete_prefix(@contents_dir)] << { title: title, link: link(dst_file), date: date }
         end
       end
     end
@@ -133,7 +134,7 @@ module Blogger
           context.title      = title
           context.content    = @markdown.render(body)
           context.date       = Date.strptime(front_matter['date'], '%Y-%m-%d').strftime('%-d %b, %Y')
-          context.articles   = @nav['articles']
+          context.articles   = @nav['articles'].sort { |a, b| b[:date] <=> a[:date] }
           context.link       = ->(path) { link(path) } # TODO: Extract link() to helper.
 
           File.write(dst_file, @template.render(context))
