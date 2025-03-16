@@ -67,7 +67,8 @@ class BloggerCLI < Thor
                                  assets_dir: assets_dir,
                                  layouts_dir: layouts_dir,
                                  public_dir: public_dir,
-                                 host: options[:host]
+                                 host: options[:host],
+                                 dev: true
 
     # Build once.
     engine.build
@@ -78,9 +79,9 @@ class BloggerCLI < Thor
     @log.info 'Watching for changes...'
     listener = Listen.to(contents_dir, layouts_dir) do |modified, added, removed|
       # Sometimes, events above fires 2 times within 5s. This naively prevents rebuild.
-      
+
       if Time.now - @last_built_at < 5
-        @log.info "rebuild not triggered because the change events fired within 5s since last build"
+        @log.info 'rebuild not triggered because the change events fired within 5s since last build'
         next
       end
 

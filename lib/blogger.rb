@@ -27,6 +27,7 @@ module Blogger
       @assets_dir   = options[:assets_dir]
       @layouts_dir  = options[:layouts_dir]
       @public_dir   = options[:public_dir]
+      @dev          = options[:dev]
 
       @scheme = options[:scheme] || 'http'
       @host   = options[:host]   || 'localhost'
@@ -94,6 +95,13 @@ module Blogger
           front_matter, = _extract_front_matter(content)
           title = front_matter['title']
           date  = Date.strptime(front_matter['date'], '%Y-%m-%d').strftime('%Y/%m/%d')
+          draft = front_matter['draft']
+
+          # Do not add nav for draft content.
+          if !@dev && draft
+            @log.warn "skip #{title} (draft)"
+            next
+          end
 
           nav[src.delete_prefix(@contents_dir)] << { title: title, link: link(dst_file), date: date }
         end
