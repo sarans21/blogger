@@ -68,7 +68,7 @@ module Blogger
     private
 
     def _validate_options!(options = {})
-      options.assert_valid_keys(:contents_dir, :assets_dir, :layouts_dir, :public_dir, :scheme, :host, :port)
+      options.assert_valid_keys(:contents_dir, :assets_dir, :layouts_dir, :public_dir, :scheme, :host, :port, :dev)
     end
 
     def _build_index(src = nil, dst = nil, nav = nil)
