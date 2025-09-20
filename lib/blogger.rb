@@ -17,6 +17,10 @@ module Blogger
 
   class Renderer < Redcarpet::Render::HTML
     include Rouge::Plugins::Redcarpet
+
+    def image(link, title, alt_text)
+      %(<figure><img src="#{link}" alt="#{alt_text}"><figcaption>#{title || alt_text}</figcaption></figure>)
+    end
   end
 
   class Engine
