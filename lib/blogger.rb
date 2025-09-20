@@ -134,6 +134,8 @@ module Blogger
           content = File.read(f)
           front_matter, body = _extract_front_matter(content)
           title              = front_matter['title']
+          description        = front_matter['description']
+          og_image           = front_matter['og_image']
 
           page = {
             title: title,
@@ -141,13 +143,16 @@ module Blogger
             type: src.delete_prefix(@contents_dir)
           }
 
-          context            = Context.new
-          context.page_title = "Sarans' Blog | #{title}" # TODO: Configurable.
-          context.title      = title
-          context.content    = @markdown.render(body)
-          context.date       = Date.strptime(front_matter['date'], '%Y-%m-%d').strftime('%-d %b, %Y')
-          context.articles   = @nav['articles'].sort { |a, b| b[:date] <=> a[:date] }
-          context.link       = ->(path) { link(path) } # TODO: Extract link() to helper.
+          context             = Context.new
+          context.page_title  = "Sarans' Blog | #{title}" # TODO: Configurable.
+          context.title       = title
+          context.description = description
+          context.og_image    = og_image
+          context.content     = @markdown.render(body)
+          context.date        = Date.strptime(front_matter['date'], '%Y-%m-%d').strftime('%-d %b, %Y')
+          context.articles    = @nav['articles'].sort { |a, b| b[:date] <=> a[:date] }
+          context.link        = ->(path) { link(path) } # TODO: Extract link() to helper.
+          context.dst_file    = dst_file
 
           File.write(dst_file, @template.render(context))
 
@@ -169,7 +174,7 @@ module Blogger
   end
 
   class Context
-    attr_accessor :page_title, :title, :content, :date, :articles, :link
+    attr_accessor :page_title, :title, :description, :content, :date, :articles, :link, :og_image, :dst_file
 
     def initialize
       @articles = []
