@@ -5,6 +5,19 @@
     %link{:rel => "stylesheet", :href => "/stylesheets/syntax.css"}
     %link{:rel => "stylesheet", :href => "/stylesheets/blog.css"}
     %meta{:name => "viewport", :content => "width=device-width, initial-scale=1"}
+
+    %meta{:property => "og:type", :content => "article"}
+    %meta{:property => "og:site_name", :content =>"Sarans' Blog"}
+    %meta{:property => "og:title", :content => "#{title}"}
+    %meta{:property => "og:description", :content => "#{description}"}
+    %meta{:property => "og:url", :content => "#{link.call(dst_file)}"}
+
+    %link{:href => "https://fonts.googleapis.com", :rel => "preconnect"}/
+    %link{:crossorigin => "", :href => "https://fonts.gstatic.com", :rel => "preconnect"}/
+    %link{:href => "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap", :rel => "stylesheet"}/
+
+    - if og_image
+      %meta{:property => "og:image", :content => "#{link.call(og_image || "")}"}
   %body
     .container
       %header.header
