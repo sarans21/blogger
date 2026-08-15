@@ -4,6 +4,7 @@
     %link{:rel => "stylesheet", :href => "/stylesheets/sanitize.css"}
     %link{:rel => "stylesheet", :href => "/stylesheets/syntax.css"}
     %link{:rel => "stylesheet", :href => "/stylesheets/blog.css"}
+    %link{:rel => "icon", :type => "image/png", :sizes => "64x64", :href => "/favicon.png"}
     %meta{:name => "viewport", :content => "width=device-width, initial-scale=1"}
 
     %meta{:property => "og:type", :content => "article"}
@@ -14,7 +15,9 @@
 
     %link{:href => "https://fonts.googleapis.com", :rel => "preconnect"}/
     %link{:crossorigin => "", :href => "https://fonts.gstatic.com", :rel => "preconnect"}/
-    %link{:href => "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap", :rel => "stylesheet"}/
+    %link{:href => "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap", :rel => "stylesheet"}/
+
+    %script{:src => "https://cdn.jsdelivr.net/npm/mermaid@11.16.1/dist/mermaid.min.js"}
 
     - if og_image
       %meta{:property => "og:image", :content => "#{link.call(og_image || "")}"}
@@ -28,12 +31,13 @@
         %ul
           - articles.each do |ar, pages|
             %li
-              %h2= ar.gsub('_', ' ').titleize
+              %h2= ar.gsub('_', ' ').capitalize
               %ul.sub-nav
                 - pages.each do |a|
                   %li.sub-nav-item
                     %a.item{:href => a[:link]}= a[:title]
-                    %span.item-date =a[:date]
+                    %div{:style => "flex: 1"}
+                    %span.item-date= a[:date]
         %ul.main-pages-nav
           %li
             %a{:href => link.call("")}
@@ -48,3 +52,13 @@
           Powered by
           %a{:href => "https://github.com/sarans21/blogger"} blogger
         %p &copy; 2022 Saran Siriphantnon
+
+    %javascript
+      mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict"
+      });
+
+      await mermaid.run({
+      querySelector: ".mermaid"
+      });
